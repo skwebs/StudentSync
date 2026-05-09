@@ -2,20 +2,11 @@
 
 This guide provides the complete setup for your Google Sheets backend. This approach allows you to use Google Sheets as a free, reliable REST-style database.
 
-## 1. Data Structure (Google Sheet)
+## 1. Google Apps Script Implementation
 1.  Create a new Google Sheet.
-2.  Rename the active sheet (tab) to exactly: `Students`.
-3.  Set up the headers in the first row (A1 to E1):
-    -   **A1**: `id`
-    -   **B1**: `name`
-    -   **C1**: `class`
-    -   **D1**: `roll`
-    -   **E1**: `mobile`
-
-## 2. Google Apps Script Implementation
-1.  In your Google Sheet, go to **Extensions** > **Apps Script**.
-2.  Delete any existing code in the editor (`Code.gs`).
-3.  Copy and paste the code below:
+2.  Go to **Extensions** > **Apps Script**.
+3.  Delete any existing code in the editor (`Code.gs`).
+4.  Copy and paste the code below:
 
 ```javascript
 /**
@@ -27,12 +18,32 @@ const SHEET_NAME = "Students";
 const SS = SpreadsheetApp.getActiveSpreadsheet();
 
 /**
+ * SETUP function: Run this once to initialize the sheet structure.
+ * Select 'setup' in the toolbar and click 'Run'.
+ */
+function setup() {
+  let sheet = SS.getSheetByName(SHEET_NAME);
+  if (!sheet) {
+    sheet = SS.insertSheet(SHEET_NAME);
+  }
+  
+  const headers = ["id", "name", "class", "roll", "mobile"];
+  sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+  sheet.setFrozenRows(1);
+  sheet.getRange(1, 1, 1, headers.length).setFontWeight("bold");
+  
+  Logger.log("Sheet 'Students' initialized with headers.");
+}
+
+/**
  * READ Operation
  * Triggered by a standard HTTP GET request.
  */
 function doGet(e) {
   try {
     const sheet = SS.getSheetByName(SHEET_NAME);
+    if (!sheet) return createJsonResponse({ status: "Error", message: "Sheet not found. Run setup() first." });
+    
     const data = sheet.getDataRange().getValues();
     const headers = data[0];
     const rows = data.slice(1);
@@ -60,6 +71,7 @@ function doPost(e) {
     const params = JSON.parse(e.postData.contents);
     const action = params.action;
     const sheet = SS.getSheetByName(SHEET_NAME);
+    if (!sheet) return createJsonResponse({ status: "Error", message: "Sheet not found. Run setup() first." });
     
     if (action === "addStudent") {
       const id = Utilities.getUuid();
@@ -105,19 +117,23 @@ function createJsonResponse(data) {
 }
 ```
 
-## 3. Deployment Steps (Crucial)
-1.  Click the **Deploy** button (top right) > **New Deployment**.
+## 2. Automatic Initialization (NEW)
+1.  After pasting the code, look at the toolbar in the Apps Script editor.
+2.  Select the **`setup`** function from the dropdown list.
+3.  Click **Run**.
+4.  This will automatically create the `Students` sheet with the correct headers and formatting. You don't need to create the sheet manually!
+
+## 3. Deployment Steps
+1.  Click **Deploy** (top right) > **New Deployment**.
 2.  Click the "Select type" (gear icon) and choose **Web app**.
 3.  Fill in the details:
     -   **Description**: `StudentSync API v1`
-    -   **Execute as**: `Me` (your email)
+    -   **Execute as**: `Me`
     -   **Who has access**: `Anyone`
 4.  Click **Deploy**.
-5.  If prompted, click **Authorize Access**, select your Google account, click **Advanced**, and then click **Go to StudentSync (unsafe)**. Allow the permissions.
-6.  **Copy the "Web app" URL**. It should end in `/exec`.
+5.  If prompted, click **Authorize Access**, select your account, click **Advanced**, and then click **Go to StudentSync (unsafe)**.
+6.  **Copy the "Web app" URL**.
 
-## 4. Troubleshooting & Tips
--   **CORS**: Google Apps Script handles CORS by redirecting requests. The `axios` library used in the app handles this automatically.
--   **New Updates**: Every time you change the script code, you **MUST** create a "New Deployment" (or manage deployment and update the version) to see the changes. Simply saving the script does not update the live API.
--   **Execution as "Me"**: This ensures the script has permission to edit *your* sheet even when a request comes from an anonymous app user.
--   **Privacy**: Do not share the `/exec` URL publicly as "Anyone" can modify your sheet with it. For better security, you can implement a simple token check in the `doPost` function.
+## 4. Tips
+-   **New Updates**: Every time you change the script code, you **MUST** create a "New Deployment" to update the live API.
+-   **Setup**: If you accidentally delete the `Students` sheet, just run the `setup()` function again to restore the structure.

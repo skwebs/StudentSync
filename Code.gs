@@ -1,8 +1,25 @@
 const SHEET_NAME = "Students";
-const SPREADSHEET_ID = SpreadsheetApp.getActiveSpreadsheet().getId();
+const SS = SpreadsheetApp.getActiveSpreadsheet();
+
+/**
+ * SETUP function: Run this once to initialize the sheet structure.
+ */
+function setup() {
+  let sheet = SS.getSheetByName(SHEET_NAME);
+  if (!sheet) {
+    sheet = SS.insertSheet(SHEET_NAME);
+  }
+  
+  const headers = ["id", "name", "class", "roll", "mobile"];
+  sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+  sheet.setFrozenRows(1);
+  sheet.getRange(1, 1, 1, headers.length).setFontWeight("bold");
+  
+  Logger.log("Sheet 'Students' initialized with headers.");
+}
 
 function doGet(e) {
-  const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(SHEET_NAME);
+  const sheet = SS.getSheetByName(SHEET_NAME);
   const data = sheet.getDataRange().getValues();
   const headers = data[0];
   const rows = data.slice(1);
@@ -22,7 +39,7 @@ function doGet(e) {
 function doPost(e) {
   const params = JSON.parse(e.postData.contents);
   const action = params.action;
-  const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(SHEET_NAME);
+  const sheet = SS.getSheetByName(SHEET_NAME);
   
   if (action === "addStudent") {
     const id = Utilities.getUuid();
