@@ -1,4 +1,5 @@
+import { GOOGLE_APPS_SCRIPT_URL } from '@env';
+
 export const CONFIG = {
-  // Replace with your Google Apps Script Web App URL after deployment
-  API_URL: 'YOUR_GOOGLE_APPS_SCRIPT_URL',
+  API_URL: GOOGLE_APPS_SCRIPT_URL,
 };
